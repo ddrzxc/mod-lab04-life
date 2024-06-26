@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading;
 using System.IO;
 using Newtonsoft.Json;
+using ScottPlot;
+using ScottPlot.Plottables;
 
 namespace cli_life
 {
@@ -35,7 +37,7 @@ namespace cli_life
         public int Width { get { return Columns * CellSize; } }
         public int Height { get { return Rows * CellSize; } }
         public int Generation;
-        public List<int> states;
+        public List<string> states;
 
         public Board(int width, int height, int cellSize, double liveDensity = .1)
         {
@@ -49,7 +51,7 @@ namespace cli_life
             ConnectNeighbors();
             Randomize(liveDensity);
             Generation = 0;
-            states = new List<int>();
+            states = new List<string>();
         }
         public Board(string fileName)
         {
@@ -67,7 +69,7 @@ namespace cli_life
                 }
             ConnectNeighbors();
             Generation = 0;
-            states = new List<int>();
+            states = new List<string>();
         }
 
         readonly Random rand = new Random();
@@ -170,9 +172,15 @@ namespace cli_life
         }
         public bool Stable()
         {
-            states.Add(Cells.GetHashCode());
+            string cells = "";
+            foreach (var cell in Cells)
+            {
+                if (cell.IsAlive) cells += '*';
+                else cells += ' ';
+            }
+            states.Add(cells);
             if (states.Count > 5) states.RemoveAt(0);
-            return states.SkipLast(1).Contains(Cells.GetHashCode());
+            return states.SkipLast(1).Contains(cells);
         }
     }
     public static class Extensions
@@ -225,9 +233,37 @@ namespace cli_life
                 Console.Write('\n');
             }
         }
+        static void Research()
+        {
+            Plot plot = new Plot();
+            plot.ShowLegend();
+            double[] liveDensities = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9};
+            foreach (double ld in liveDensities)
+            {
+                Console.WriteLine(ld);
+                List<int> generations = new List<int>();
+                List<int> cells = new List<int>();
+                Board board = new Board(100, 50, 1, ld);
+                while (true)
+                {
+                    if (board.Generation % 20 == 0)
+                    {
+                        generations.Add(board.Generation);
+                        cells.Add(board.Cells.Cast<Cell>().Where(x => x.IsAlive).Count());
+                    }
+                    board.Advance();
+                    if (board.Stable()) break;
+                }
+                Scatter scatter = plot.Add.Scatter(generations, cells);
+                scatter.LegendText = ld.ToString();
+                scatter.MarkerShape = MarkerShape.None;
+            }
+            plot.SavePng("plot.png", 1000, 1000);
+        }
         static void Main(string[] args)
         {
             //Reset();
+            //Research();
             board = Board.WithSettings("settings.json");
             board = new Board("stable.txt");
             Dictionary<string, int[,]> elements = new Dictionary<string, int[,]> {
