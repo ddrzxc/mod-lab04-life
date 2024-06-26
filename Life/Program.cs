@@ -35,6 +35,7 @@ namespace cli_life
         public int Width { get { return Columns * CellSize; } }
         public int Height { get { return Rows * CellSize; } }
         public int Generation;
+        public List<int> states;
 
         public Board(int width, int height, int cellSize, double liveDensity = .1)
         {
@@ -48,6 +49,7 @@ namespace cli_life
             ConnectNeighbors();
             Randomize(liveDensity);
             Generation = 0;
+            states = new List<int>();
         }
         public Board(string fileName)
         {
@@ -65,6 +67,7 @@ namespace cli_life
                 }
             ConnectNeighbors();
             Generation = 0;
+            states = new List<int>();
         }
 
         readonly Random rand = new Random();
@@ -165,6 +168,12 @@ namespace cli_life
                 }
             return res;
         }
+        public bool Stable()
+        {
+            states.Add(Cells.GetHashCode());
+            if (states.Count > 5) states.RemoveAt(0);
+            return states.SkipLast(1).Contains(Cells.GetHashCode());
+        }
     }
     public static class Extensions
     {
@@ -254,6 +263,7 @@ namespace cli_life
                     }
                 }
                 board.Advance();
+                if (board.Stable()) break;
                 Thread.Sleep(100);
             }
         }
