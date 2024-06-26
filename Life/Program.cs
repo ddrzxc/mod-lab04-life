@@ -132,6 +132,57 @@ namespace cli_life
             }
             File.WriteAllLines(fileName, strings);
         }
+        public int CountElement(int[,] element)
+        {
+            int count = 0;
+            List<(int, int)> counted = new List<(int, int)>();
+            for (int x = 0; x < Columns; x++)
+                for (int y = 0; y < Rows; y++)
+                    for (int i = 0; i < 4; i++)
+                    {
+                        int[,] submatrix = Submatrix(x, y, element.GetLength(1), element.GetLength(0));
+                        submatrix = submatrix.Rotate90();
+                        if (element.SequenceEquals(submatrix) && !counted.Contains((x, y)))
+                        {
+                            counted.Add((x, y));
+                            count++;
+                        }
+                    }
+            return count;
+        }
+        public int[,] Submatrix(int x, int y, int width, int height)
+        {
+            int[,] res = new int[width, height];
+            for (int i = 0; i < width; i++)
+                for (int j = 0; j < height; j++)
+                {
+                    int k = x + i, l = y + j;
+                    if (k >= Columns) k -= Columns;
+                    if (l >= Rows) l -= Rows;
+                    res[i, j] = Convert.ToInt32(Cells[k, l].IsAlive);
+                }
+            return res;
+        }
+    }
+    public static class Extensions
+    {
+        public static bool SequenceEquals<T>(this T[,] a, T[,] b) => a.Rank == b.Rank
+            && Enumerable.Range(0, a.Rank).All(d=> a.GetLength(d) == b.GetLength(d))
+            && a.Cast<T>().SequenceEqual(b.Cast<T>());
+        public static int[,] Rotate90(this int[,] matrix)
+        {
+            int rows = matrix.GetLength(0);
+            int cols = matrix.GetLength(1);
+            int[,] result = new int[cols, rows];
+            for (int row = 0; row < rows; row++)
+            {
+                for (int col = 0; col < cols; col++)
+                {
+                    result[col, rows - row - 1] = matrix[row, col];
+                }
+            }
+            return result;
+        }
     }
     class Program
     {
@@ -167,6 +218,12 @@ namespace cli_life
         {
             //Reset();
             board = Board.WithSettings("settings.json");
+            int[,] block = {
+                {0, 0, 0, 0},
+                {0, 1, 1, 0},
+                {0, 1, 1, 0},
+                {0, 0, 0, 0}
+            };
             while(true)
             {
                 Console.Clear();
@@ -174,9 +231,13 @@ namespace cli_life
                 Console.WriteLine($"Поколение {board.Generation}");
                 int liveNeighbors = board.Cells.Cast<Cell>().Where(x => x.IsAlive).Count();
                 Console.WriteLine($"Живых клеток {liveNeighbors}");
-                if (Console.KeyAvailable) {
+                int count = board.CountElement(block);
+                Console.WriteLine($"Block: {count}");
+                if (Console.KeyAvailable)
+                {
                     ConsoleKeyInfo key = Console.ReadKey();
-                    switch (key.KeyChar) {
+                    switch (key.KeyChar)
+                    {
                     case 'l':
                         board = new Board("board.txt");
                         break;
