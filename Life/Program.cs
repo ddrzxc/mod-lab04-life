@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
+using System.IO;
+using Newtonsoft.Json;
 
 namespace cli_life
 {
@@ -47,6 +47,22 @@ namespace cli_life
             ConnectNeighbors();
             Randomize(liveDensity);
         }
+        public Board(string fileName)
+        {
+            string[] strings = File.ReadAllLines(fileName);
+            int fileColumns = strings.Min(s => s.Length);
+            int fileRows = strings.Length;
+            Cells = new Cell[fileColumns, fileRows];
+            for (int x = 0; x < fileColumns; x++)
+                for (int y = 0; y < fileRows; y++)
+                {
+                    Cells[x, y] = new Cell
+                    {
+                        IsAlive = (strings[y][x] == '*')
+                    };
+                }
+            ConnectNeighbors();
+        }
 
         readonly Random rand = new Random();
         public void Randomize(double liveDensity)
@@ -85,6 +101,33 @@ namespace cli_life
                 }
             }
         }
+        public static Board WithSettings(string fileName)
+        {
+            Board board;
+            dynamic settings = JsonConvert.DeserializeObject<dynamic>(File.ReadAllText(fileName));
+            board = new Board(
+                settings.width,
+                settings.height,
+                settings.cellSize,
+                settings.liveDensity
+            );
+            return board;
+        }
+        public void Save(string fileName)
+        {
+            string[] strings = new string[Rows];
+            for (int y = 0; y < Rows; y++)
+            {
+                for (int x = 0; x < Columns; x++)
+                {
+                    if (Cells[x, y].IsAlive)
+                        strings[y] += '*';
+                    else
+                        strings[y] += ' ';
+                }
+            }
+            File.WriteAllLines(fileName, strings);
+        }
     }
     class Program
     {
@@ -118,13 +161,25 @@ namespace cli_life
         }
         static void Main(string[] args)
         {
-            Reset();
+            //Reset();
+            board = Board.WithSettings("settings.json");
             while(true)
             {
                 Console.Clear();
                 Render();
                 board.Advance();
-                Thread.Sleep(1000);
+                 if (Console.KeyAvailable) {
+                    ConsoleKeyInfo key = Console.ReadKey();
+                    switch (key.KeyChar) {
+                    case 'l':
+                        board = new Board("board.txt");
+                        break;
+                    case 's':
+                        board.Save("save.txt");
+                        break;
+                    }
+                }
+                Thread.Sleep(100);
             }
         }
     }
