@@ -138,28 +138,30 @@ namespace cli_life
             List<(int, int)> counted = new List<(int, int)>();
             for (int x = 0; x < Columns; x++)
                 for (int y = 0; y < Rows; y++)
+                {
                     for (int i = 0; i < 4; i++)
                     {
+                        element = element.Rotate90();
                         int[,] submatrix = Submatrix(x, y, element.GetLength(1), element.GetLength(0));
-                        submatrix = submatrix.Rotate90();
                         if (element.SequenceEquals(submatrix) && !counted.Contains((x, y)))
                         {
                             counted.Add((x, y));
                             count++;
                         }
                     }
+                }
             return count;
         }
         public int[,] Submatrix(int x, int y, int width, int height)
         {
-            int[,] res = new int[width, height];
+            int[,] res = new int[height, width];
             for (int i = 0; i < width; i++)
                 for (int j = 0; j < height; j++)
                 {
                     int k = x + i, l = y + j;
                     if (k >= Columns) k -= Columns;
                     if (l >= Rows) l -= Rows;
-                    res[i, j] = Convert.ToInt32(Cells[k, l].IsAlive);
+                    res[j, i] = Convert.ToInt32(Cells[k, l].IsAlive);
                 }
             return res;
         }
@@ -218,11 +220,13 @@ namespace cli_life
         {
             //Reset();
             board = Board.WithSettings("settings.json");
-            int[,] block = {
-                {0, 0, 0, 0},
-                {0, 1, 1, 0},
-                {0, 1, 1, 0},
-                {0, 0, 0, 0}
+            board = new Board("stable.txt");
+            Dictionary<string, int[,]> elements = new Dictionary<string, int[,]> {
+                {"Block", new int[,]{{0,0,0,0}, {0,1,1,0}, {0,1,1,0}, {0,0,0,0}}},
+                {"Beehive", new int[,]{{0,0,0,0,0,0}, {0,0,1,1,0,0}, {0,1,0,0,1,0}, {0,0,1,1,0,0}, {0,0,0,0,0,0}}},
+                {"Loaf", new int[,]{{0,0,0,0,0,0}, {0,0,1,1,0,0}, {0,1,0,0,1,0}, {0,0,1,0,1,0}, {0,0,0,1,0,0}, {0,0,0,0,0,0}}},
+                {"Boat", new int[,]{{0,0,0,0,0}, {0,0,1,0,0}, {0,1,0,1,0}, {0,1,1,0,0}, {0,0,0,0,0}}},
+                {"Ship", new int[,]{{0,0,0,0,0}, {0,0,1,1,0}, {0,1,0,1,0}, {0,1,1,0,0}, {0,0,0,0,0}}},
             };
             while(true)
             {
@@ -231,8 +235,11 @@ namespace cli_life
                 Console.WriteLine($"Поколение {board.Generation}");
                 int liveNeighbors = board.Cells.Cast<Cell>().Where(x => x.IsAlive).Count();
                 Console.WriteLine($"Живых клеток {liveNeighbors}");
-                int count = board.CountElement(block);
-                Console.WriteLine($"Block: {count}");
+                foreach (var elem in elements)
+                {
+                    int count = board.CountElement(elem.Value);
+                    Console.WriteLine($"{elem.Key}: {count}");
+                }
                 if (Console.KeyAvailable)
                 {
                     ConsoleKeyInfo key = Console.ReadKey();
