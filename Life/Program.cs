@@ -34,6 +34,7 @@ namespace cli_life
         public int Rows { get { return Cells.GetLength(1); } }
         public int Width { get { return Columns * CellSize; } }
         public int Height { get { return Rows * CellSize; } }
+        public int Generation;
 
         public Board(int width, int height, int cellSize, double liveDensity = .1)
         {
@@ -46,6 +47,7 @@ namespace cli_life
 
             ConnectNeighbors();
             Randomize(liveDensity);
+            Generation = 0;
         }
         public Board(string fileName)
         {
@@ -62,6 +64,7 @@ namespace cli_life
                     };
                 }
             ConnectNeighbors();
+            Generation = 0;
         }
 
         readonly Random rand = new Random();
@@ -77,6 +80,7 @@ namespace cli_life
                 cell.DetermineNextLiveState();
             foreach (var cell in Cells)
                 cell.Advance();
+            Generation++;
         }
         private void ConnectNeighbors()
         {
@@ -167,8 +171,10 @@ namespace cli_life
             {
                 Console.Clear();
                 Render();
-                board.Advance();
-                 if (Console.KeyAvailable) {
+                Console.WriteLine($"Поколение {board.Generation}");
+                int liveNeighbors = board.Cells.Cast<Cell>().Where(x => x.IsAlive).Count();
+                Console.WriteLine($"Живых клеток {liveNeighbors}");
+                if (Console.KeyAvailable) {
                     ConsoleKeyInfo key = Console.ReadKey();
                     switch (key.KeyChar) {
                     case 'l':
@@ -179,6 +185,7 @@ namespace cli_life
                         break;
                     }
                 }
+                board.Advance();
                 Thread.Sleep(100);
             }
         }
